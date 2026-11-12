@@ -48,9 +48,19 @@ export class StallController {
     }
   };
 
-  createStall = async (req: Request, res: Response): Promise<Response> => {
+createStall = async (req: Request, res: Response): Promise<Response> => {
     try {
-      const stall = await this.stallService.createStall(req.body);
+      // 1. Ambil ID user yang sedang login dari request (hasil dari middleware authenticate)
+      const currentUser = (req as any).user;
+      const ownerId = currentUser?.id || currentUser?.sub || currentUser?.userId;
+
+      // 2. Gabungkan ownerId ke dalam data body yang akan dikirim ke service
+      const stallData = {
+        ...req.body,
+        ownerId: ownerId, // Sesuaikan dengan nama kolom/properti di service/database (bisa ownerId atau userId)
+      };
+
+      const stall = await this.stallService.createStall(stallData);
       return res.status(201).json({ status: 'success', data: stall });
     } catch (error) {
       return this.handleError(res, error);
@@ -83,9 +93,26 @@ export class StallController {
     }
   };
 
-  deleteStall = async (req: Request, res: Response): Promise<Response> => {
+deleteStall = async (req: Request, res: Response): Promise<Response> => {
     try {
-      const stall = await this.stallService.deleteStall(Number(req.params.id));
+      const stallId = Number(req.params.id);
+      
+      // 1. Ambil data warung dulu untuk mengecek siapa pemiliknya
+      const existingStall = await this.stallService.getStallById(stallId);
+
+      // 2. Cek apakah user yang login bukan Admin DAN bukan pemilik warung tersebut
+      const currentUser = (req as any).user;
+      const ownerId = (existingStall as any).ownerId || (existingStall as any).userId;
+
+      if (currentUser && currentUser.role !== 'admin' && String(ownerId) !== String(currentUser.id || currentUser.sub)) {
+        return res.status(403).json({
+          status: 'fail',
+          message: 'Anda tidak memiliki hak akses untuk menghapus warung milik orang lain',
+        });
+      }
+
+      // 3. Jika lolos (pemilik asli atau admin), jalankan proses hapus
+      const stall = await this.stallService.deleteStall(stallId);
       return res.status(200).json({ status: 'success', data: stall });
     } catch (error) {
       return this.handleError(res, error);

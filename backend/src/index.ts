@@ -1,4 +1,5 @@
 import express, { type Application } from 'express';
+import cors from 'cors';
 import { sql } from 'drizzle-orm';
 import swaggerUi from 'swagger-ui-express';
 import { getDb } from './db/index.ts';
@@ -12,6 +13,7 @@ import { openApiDocument } from './docs/openapi.ts';
 const app: Application = express();
 const PORT: number = 3000;
 
+app.use(cors({ origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173' }));
 app.use(express.json());
 
 // Endpoint dokumentasi OpenAPI / Swagger
@@ -34,10 +36,8 @@ app.use('/auth', authRouter);
 app.use('/api/v1/stalls', stallRouter);
 app.use('/stalls', stallRouter);
 
-
 app.use('/api/v1/users', userRouter);
 app.use('/users', userRouter);
-  
 
 app.use(notFoundHandler);
 app.use(errorHandler);

@@ -6,6 +6,7 @@ import { getDb } from './db/index.ts';
 import { authRouter } from './routes/authRouter.ts';
 import { stallRouter } from './routes/stallRouter.ts';
 import { userRouter } from './routes/userRouter.ts';
+import auditLogRouter from './routes/auditLogRouter.ts';
 import { notFoundHandler } from './middlewares/notFound.ts';
 import { errorHandler } from './middlewares/errorHandler.ts';
 import { openApiDocument } from './docs/openapi.ts';
@@ -38,6 +39,9 @@ app.use('/stalls', stallRouter);
 
 app.use('/api/v1/users', userRouter);
 app.use('/users', userRouter);
+
+app.use('/api/v1/audit-logs', auditLogRouter);
+app.use('/audit-logs', auditLogRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

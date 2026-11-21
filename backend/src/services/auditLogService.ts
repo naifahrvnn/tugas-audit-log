@@ -1,29 +1,62 @@
-import { AuditLogRepository, type CreateAuditLogInput } from '../repositories/auditLogRepository.ts';
-import type { AuditLogResponseDto } from '../dtos/auditLogDto.ts';
+import type { AuditLogItemDto, AuditLogPageDto } from '../dtos/auditLogDto.ts';
+import { AuditLogRepository, type AuditEntry, type AuditExecutor } from '../repositories/auditLogRepository.ts';
+import type { AuditLogQuery } from '../schemas/auditLogSchema.ts';
+
+function parseMetadata(raw: unknown): unknown {
+  if (raw === null || raw === undefined) return null;
+  if (typeof raw !== 'string') return raw;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return raw;
+  }
+}
+
+function toIsoString(value: unknown): string | null {
+  if (!value) return null;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.toISOString();
+  const parsed = new Date(String(value));
+  return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toISOString();
+}
 
 export class AuditLogService {
-  constructor(private auditLogRepository: AuditLogRepository = new AuditLogRepository()) {}
+  constructor(private readonly repo = new AuditLogRepository()) {}
 
-  private toDto(row: any): AuditLogResponseDto {
+  async record(entry: AuditEntry, executor?: AuditExecutor): Promise<void> {
+    await this.repo.insert(entry, executor);
+  }
+
+  private toItemDto(row: Record<string, unknown>): AuditLogItemDto {
     return {
-      id: row.id,
-      userId: row.userId,
-      action: row.action,
-      targetTable: row.targetTable,
-      targetId: row.targetId,
-      metadata: row.metadata,
-      createdAt: row.createdAt,
+      id: Number(row.id),
+      userId: Number(row.userId),
+      userName: (row.userName as string | null) ?? null,
+      userEmail: (row.userEmail as string | null) ?? null,
+      action: String(row.action),
+      targetTable: String(row.targetTable),
+      targetId: Number(row.targetId),
+      metadata: parseMetadata(row.metadata),
+      createdAt: toIsoString(row.createdAt),
     };
   }
 
-  async getAllLogs(): Promise<AuditLogResponseDto[]> {
-    const rows = await this.auditLogRepository.findAll();
-    return rows.map((row) => this.toDto(row));
+  async list(query: AuditLogQuery): Promise<AuditLogPageDto> {
+    const { rows, total } = await this.repo.findPage(query);
+    const totalPages = total === 0 ? 0 : Math.ceil(total / query.pageSize);
+    return {
+      items: rows.map((row) => this.toItemDto(row as Record<string, unknown>)),
+      pagination: {
+        page: query.page,
+        pageSize: query.pageSize,
+        total,
+        totalPages,
+      },
+    };
   }
 
-  async createLog(input: CreateAuditLogInput): Promise<AuditLogResponseDto> {
-    const row = await this.auditLogRepository.create(input);
-    if (!row) throw new Error('AUDIT_LOG_NOT_FOUND');
-    return this.toDto(row);
+  async getById(id: number): Promise<AuditLogItemDto | null> {
+    const row = await this.repo.findById(id);
+    if (!row) return null;
+    return this.toItemDto(row as Record<string, unknown>);
   }
 }

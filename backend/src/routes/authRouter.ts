@@ -13,5 +13,6 @@ authRouter.post('/login', validate(loginSchema, 'body'), authController.login);
 
 // TAMBAHKAN ROUTE INI: Untuk mengambil profil user yang sedang login (butuh token)
 authRouter.get('/me', authenticate, authController.getMe); 
+authRouter.post('/logout', authenticate, authController.logout);
 
 export { authRouter };

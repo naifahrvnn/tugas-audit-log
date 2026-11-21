@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
+import AuditLogPage from './pages/AuditLogPage';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
 import RegisterPage from './pages/RegisterPage';
@@ -29,6 +30,14 @@ export default function App() {
             element={
               <ProtectedRoute roles={['admin', 'owner']}>
                 <StallFormPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/audit-logs"
+            element={
+              <ProtectedRoute roles={['admin']}>
+                <AuditLogPage />
               </ProtectedRoute>
             }
           />

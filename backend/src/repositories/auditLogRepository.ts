@@ -11,6 +11,7 @@ export interface AuditEntry {
   metadata?: Record<string, unknown> | null;
 }
 
+// db biasa atau tx dari db.transaction(); keduanya punya .insert()
 export type AuditExecutor = Pick<Awaited<ReturnType<typeof getDb>>, 'insert'>;
 
 const selectedColumns = {
@@ -34,7 +35,7 @@ function buildWhere(query: AuditLogQuery): SQL | undefined {
   if (query.from) conditions.push(gte(auditLogs.createdAt, new Date(`${query.from}T00:00:00.000Z`)));
   if (query.to) {
     const nextDay = new Date(`${query.to}T00:00:00.000Z`);
-    nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+    nextDay.setUTCDate(nextDay.getUTCDate() + 1); // batas akhir hari, inklusif
     conditions.push(lt(auditLogs.createdAt, nextDay));
   }
   return conditions.length > 0 ? and(...conditions) : undefined;
@@ -66,6 +67,7 @@ export class AuditLogRepository {
       .offset(offset)
       .fetch(query.pageSize);
 
+    // total dihitung dari baris yang lolos filter, bukan seluruh tabel
     const totals = await db.select({ total: count() }).from(auditLogs).where(where);
     return { rows, total: Number(totals[0]?.total ?? 0) };
   }

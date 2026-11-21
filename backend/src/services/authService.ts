@@ -5,6 +5,8 @@ import { AppError } from '../errors/AppError.ts';
 import { UnauthorizedError } from '../errors/UnauthorizedError.ts';
 import type { LoginInput, RegisterInput } from '../schemas/authSchema.ts';
 import type { AuthUserDto, LoginResponseDto } from '../dtos/authDto.ts';
+import { AuditLogService } from './auditLogService.ts';
+import type { RequestContext } from '../utils/requestContext.ts';
 
 type UserRow = NonNullable<Awaited<ReturnType<UserRepository['findByEmail']>>>;
 
@@ -22,6 +24,7 @@ export class AuthService {
     private toDto(row: UserRow): AuthUserDto {
     return { id: row.id, name: row.name, email: row.email, role: row.role };
     }
+    private auditLogService: AuditLogService = new AuditLogService();
 
   async register(input: RegisterInput): Promise<AuthUserDto> {
     const existing = await this.userRepository.findByEmail(input.email);
@@ -41,7 +44,7 @@ export class AuthService {
     return this.toDto(row);
   }
 
-  async login(input: LoginInput): Promise<LoginResponseDto> {
+  async login(input: LoginInput, context: RequestContext): Promise<LoginResponseDto> {
     const row = await this.userRepository.findByEmail(input.email);
     if (!row) throw new UnauthorizedError('Email atau password salah');
 
@@ -49,6 +52,7 @@ export class AuthService {
     if (!passwordValid) throw new UnauthorizedError('Email atau password salah');
 
     const user: AuthUser = this.toDto(row);
+    await this.auditLogService.recordLogin({ id: user.id, role: user.role }, context);
     return {
       token: signToken(user),
       tokenType: 'Bearer',
@@ -56,4 +60,8 @@ export class AuthService {
       user,
     };
   }
+
+  async logout(user: { id: number; role: string }, context: RequestContext): Promise<void> {
+  await this.auditLogService.recordLogout(user, context); // tidak pernah melempar error
+}
 }

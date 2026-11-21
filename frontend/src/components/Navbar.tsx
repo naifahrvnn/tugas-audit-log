@@ -6,8 +6,8 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
+    await logout();
     navigate('/', { replace: true });
   }
 
@@ -20,6 +20,7 @@ export default function Navbar() {
         <nav className="nav-links">
           <Link to="/">Daftar Warung</Link>
           {canCreateStall(user) && <Link to="/stalls/new">Tambah Warung</Link>}
+          {user?.role === 'admin' && <Link to="/audit-logs">Audit Log</Link>}
         </nav>
         <div className="nav-user">
           {user ? (

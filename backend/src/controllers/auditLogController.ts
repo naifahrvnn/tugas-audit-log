@@ -1,48 +1,53 @@
-import type { NextFunction, Request, Response } from 'express';
-import { auditLogIdSchema, auditLogQuerySchema, toFieldErrors } from '../schemas/auditLogSchema.ts';
+import type { Request, Response } from 'express';
 import { AuditLogService } from '../services/auditLogService.ts';
+import { auditLogIdSchema, auditLogQuerySchema, toFieldErrors } from '../schemas/auditLogSchema.ts';
 
 export class AuditLogController {
-  constructor(private readonly service = new AuditLogService()) {}
+  private auditLogService: AuditLogService;
 
-  list = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  constructor(auditLogService: AuditLogService = new AuditLogService()) {
+    this.auditLogService = auditLogService;
+  }
+
+  private handleError(res: Response, error: unknown): Response {
+    if (error instanceof Error && error.message === 'AUDIT_LOG_NOT_FOUND') {
+      return res.status(404).json({ status: 'fail', message: 'Catatan audit tidak ditemukan' });
+    }
+    console.error(error);
+    return res.status(500).json({ status: 'error', message: 'Terjadi kesalahan pada server' });
+  }
+
+  getAll = async (req: Request, res: Response): Promise<Response> => {
+    const parsed = auditLogQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Validasi gagal',
+        errors: toFieldErrors(parsed.error),
+      });
+    }
     try {
-      const parsed = auditLogQuerySchema.safeParse(req.query);
-      if (!parsed.success) {
-        res.status(400).json({
-          message: 'Parameter query tidak valid',
-          errors: toFieldErrors(parsed.error),
-        });
-        return;
-      }
-
-      const result = await this.service.list(parsed.data);
-      res.status(200).json(result);
-    } catch (err) {
-      next(err);
+      const data = await this.auditLogService.list(parsed.data);
+      return res.status(200).json({ status: 'success', data });
+    } catch (error) {
+      return this.handleError(res, error);
     }
   };
 
-  getById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getById = async (req: Request, res: Response): Promise<Response> => {
+    const parsed = auditLogIdSchema.safeParse(req.params);
+    if (!parsed.success) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Validasi gagal',
+        errors: toFieldErrors(parsed.error),
+      });
+    }
     try {
-      const parsed = auditLogIdSchema.safeParse(req.params);
-      if (!parsed.success) {
-        res.status(400).json({
-          message: 'Parameter id tidak valid',
-          errors: toFieldErrors(parsed.error),
-        });
-        return;
-      }
-
-      const item = await this.service.getById(parsed.data.id);
-      if (!item) {
-        res.status(404).json({ message: 'Audit log tidak ditemukan' });
-        return;
-      }
-
-      res.status(200).json(item);
-    } catch (err) {
-      next(err);
+      const data = await this.auditLogService.getById(parsed.data.id);
+      return res.status(200).json({ status: 'success', data });
+    } catch (error) {
+      return this.handleError(res, error);
     }
   };
 }

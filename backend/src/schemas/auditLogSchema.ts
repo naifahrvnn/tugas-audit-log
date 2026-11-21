@@ -35,7 +35,7 @@ export const auditLogQuerySchema = z
     from: dateParam('from').optional(),
     to: dateParam('to').optional(),
   })
-  .strict()
+  .strict() // parameter tak dikenal ditolak
   .refine((q) => !q.from || !q.to || q.from <= q.to, {
     message: 'from tidak boleh lebih besar dari to',
     path: ['from'],
@@ -50,6 +50,7 @@ export interface FieldError {
   message: string;
 }
 
+// Format error sama dengan Tugas 3: { field, message }
 export function toFieldErrors(error: ZodError): FieldError[] {
   return error.issues.flatMap((issue) => {
     if (issue.code === 'unrecognized_keys') {

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { getMe, loginRequest } from '../api/auth';
+import { getMe, loginRequest, logoutRequest } from '../api/auth';
 import { UNAUTHORIZED_EVENT, clearToken, getToken, setToken } from '../api/client';
 import type { User } from '../types';
 
@@ -8,7 +8,7 @@ interface AuthContextValue {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -47,9 +47,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(await getMe());
   }
 
-  function logout(): void {
-    clearToken();
-    setUser(null);
+  async function logout(): Promise<void> {
+    try {
+      await logoutRequest();
+    } catch {
+      // tetap logout di sisi klien walau request gagal
+    } finally {
+      clearToken();
+      setUser(null);
+    }
   }
 
   return <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>;

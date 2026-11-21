@@ -20,6 +20,7 @@ export default function Navbar() {
         <nav className="nav-links">
           <Link to="/">Daftar Warung</Link>
           {canCreateStall(user) && <Link to="/stalls/new">Tambah Warung</Link>}
+          {user?.role === 'admin' && <Link to="/audit-logs">Audit Log</Link>}
         </nav>
         <div className="nav-user">
           {user ? (

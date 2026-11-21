@@ -31,3 +31,30 @@ export interface PageMeta {
   limit: number;
   total: number;
 }
+
+export interface AuditMetadata {
+  role?: string;
+  ip_address?: string | null;
+  user_agent?: string | null;
+  result?: string;
+  [key: string]: unknown;
+}
+
+export interface AuditLog {
+  id: number;
+  userId: number;
+  userName: string | null;
+  userEmail: string | null;
+  action: string;
+  targetTable: string;
+  targetId: number;
+  metadata: AuditMetadata | null;
+  createdAt: string | null;
+}
+
+export interface AuditPagination {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}

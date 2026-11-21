@@ -1,32 +1,48 @@
-import type { Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
+import { auditLogIdSchema, auditLogQuerySchema, toFieldErrors } from '../schemas/auditLogSchema.ts';
 import { AuditLogService } from '../services/auditLogService.ts';
 
 export class AuditLogController {
-  constructor(private auditLogService: AuditLogService = new AuditLogService()) {}
+  constructor(private readonly service = new AuditLogService()) {}
 
-  private handleError(res: Response, error: unknown): Response {
-    return res.status(500).json({
-      status: 'error',
-      message: 'Terjadi kesalahan pada server',
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
-
-  getLogs = async (req: Request, res: Response): Promise<Response> => {
+  list = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const logs = await this.auditLogService.getAllLogs();
-      return res.status(200).json({ status: 'success', data: logs });
-    } catch (error) {
-      return this.handleError(res, error);
+      const parsed = auditLogQuerySchema.safeParse(req.query);
+      if (!parsed.success) {
+        res.status(400).json({
+          message: 'Parameter query tidak valid',
+          errors: toFieldErrors(parsed.error),
+        });
+        return;
+      }
+
+      const result = await this.service.list(parsed.data);
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
     }
   };
 
-  createLog = async (req: Request, res: Response): Promise<Response> => {
+  getById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const log = await this.auditLogService.createLog(req.body);
-      return res.status(201).json({ status: 'success', data: log });
-    } catch (error) {
-      return this.handleError(res, error);
+      const parsed = auditLogIdSchema.safeParse(req.params);
+      if (!parsed.success) {
+        res.status(400).json({
+          message: 'Parameter id tidak valid',
+          errors: toFieldErrors(parsed.error),
+        });
+        return;
+      }
+
+      const item = await this.service.getById(parsed.data.id);
+      if (!item) {
+        res.status(404).json({ message: 'Audit log tidak ditemukan' });
+        return;
+      }
+
+      res.status(200).json(item);
+    } catch (err) {
+      next(err);
     }
   };
 }

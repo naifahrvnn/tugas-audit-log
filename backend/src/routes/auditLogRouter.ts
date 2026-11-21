@@ -1,17 +1,13 @@
 import { Router } from 'express';
 import { AuditLogController } from '../controllers/auditLogController.ts';
+import { authenticate, requireRole } from '../middlewares/auth.ts';
 
-const auditLogRouter = Router();
-const auditLogController = new AuditLogController();
+const router = Router();
+const controller = new AuditLogController();
 
-auditLogRouter.get('/', (req, res) => {
-  // #swagger.responses[200] = { description: 'Daftar audit log' }
-  return auditLogController.getLogs(req, res);
-});
+router.use(authenticate, requireRole(['admin']));
 
-auditLogRouter.post('/', (req, res) => {
-  // #swagger.parameters['body'] = { in: 'body', required: true, schema: { $ref: '#/definitions/AuditLogInput' } }
-  return auditLogController.createLog(req, res);
-});
+router.get('/', controller.list);
+router.get('/:id', controller.getById);
 
-export { auditLogRouter };
+export default router;

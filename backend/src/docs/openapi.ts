@@ -319,6 +319,64 @@ registry.registerPath({
   },
 });
 
+// Pendaftaran Path Endpoint Logout & Audit Logs
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/auth/logout',
+  tags: ['Auth'],
+  summary: 'Logout (mencatat audit LOGOUT)',
+  security: secured,
+  responses: {
+    200: { description: 'Logout berhasil' },
+    401: { description: 'Belum login' },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/audit-logs',
+  tags: ['Audit'],
+  summary: 'Daftar audit log (admin)',
+  security: secured,
+  request: {
+    query: z.object({
+      page: z.string().optional(),
+      pageSize: z.string().optional(),
+      action: z.string().optional(),
+      targetTable: z.string().optional(),
+      targetId: z.string().optional(),
+      userId: z.string().optional(),
+      from: z.string().optional(),
+      to: z.string().optional(),
+    }),
+  },
+  responses: {
+    200: { description: 'Daftar' },
+    400: { description: 'Validasi gagal' },
+    401: { description: 'Belum login' },
+    403: { description: 'Bukan admin' },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/audit-logs/{id}',
+  tags: ['Audit'],
+  summary: 'Detail audit log (admin)',
+  security: secured,
+  request: {
+    params: z.object({
+      id: z.coerce.number().int(),
+    }),
+  },
+  responses: {
+    200: { description: 'Detail' },
+    404: { description: 'Tidak ditemukan' },
+    401: { description: 'Belum login' },
+    403: { description: 'Bukan admin' },
+  },
+});
+
 const generator = new OpenApiGeneratorV3(registry.definitions);
 export const openApiDocument = generator.generateDocument({
   openapi: '3.0.0',

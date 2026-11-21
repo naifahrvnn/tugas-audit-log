@@ -12,10 +12,5 @@ export interface AuditLogItemDto {
 
 export interface AuditLogPageDto {
   items: AuditLogItemDto[];
-  pagination: {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-  };
+  pagination: { page: number; pageSize: number; total: number; totalPages: number };
 }

@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { AuditLogController } from '../controllers/auditLogController.ts';
-import { authenticate, requireRole } from '../middlewares/auth.ts';
+import { authenticate } from '../middlewares/auth.ts'; // <- samakan dengan stallRouter.ts
+import { authorize } from '../middlewares/authorize.ts';
 
-const router = Router();
-const controller = new AuditLogController();
+const auditLogRouter = Router();
+const auditLogController = new AuditLogController();
 
-router.use(authenticate, requireRole(['admin']));
+// Append-only: hanya baca. Tidak ada endpoint tulis/ubah/hapus dari aplikasi.
+auditLogRouter.get('/', authenticate, authorize('admin'), auditLogController.getAll);
+auditLogRouter.get('/:id', authenticate, authorize('admin'), auditLogController.getById);
 
-router.get('/', controller.list);
-router.get('/:id', controller.getById);
-
-export default router;
+export { auditLogRouter };

@@ -7,6 +7,10 @@ export interface RegisterInput {
   password: string;
 }
 
+export async function logoutRequest(): Promise<void> {
+  await api.post('/auth/logout');
+}
+
 export async function registerRequest(input: RegisterInput): Promise<void> {
   await api.post('/auth/register', input);
 }
